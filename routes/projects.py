@@ -4,6 +4,7 @@ from flask import Blueprint, render_template, request, redirect
 
 from db import add_project, get_projects, get_project_by_id, update_project_pipeline
 from lib.gitlab import gitlab_get_project, gitlab_get_project_branches
+from lib.jobs import TYPES_DESCRIPTION
 
 projects = Blueprint('projects', __name__)
 
@@ -31,10 +32,13 @@ def index():
 def project(id):
     from lib.jobs import TYPES
     project = get_project_by_id(id)
+    if project is None:
+        return render_template('404.html')
     err, branches = gitlab_get_project_branches(id)
     if not branches:
         branches = []
-    return render_template('project.html', project=project, branches=branches, types=json.dumps(TYPES), error=err)
+    return render_template('project.html', project=project, branches=branches, types=json.dumps(TYPES),
+                           typesDescription=json.dumps(TYPES_DESCRIPTION), error=err)
 
 
 @projects.route('/projects/<id>/pipeline', methods=["POST"])

@@ -1,52 +1,98 @@
 {% extends "base.html" %}
 
 {% block content %}
-
+<style>
+    #steps_container > div, #env_container > div {
+        margin: 5px 0;
+    }
+</style>
 <form action="{{ url_for('projects.run_pipeline', id=project.id) }}" method="post">
-    <h1>{{project.name}} </h1>
-    <button type="submit" class="is-pulled-right">Run</button>
+    <h1 class="is-size-2">Project : {{project.name}} </h1>
+    <button type="submit" class="is-pulled-right button is-danger">Run</button>
 </form>
-<h3>Pipeline</h3>
 <form action="{{ url_for('projects.pipeline', id=project.id) }}" method="post">
+    <input type="hidden" id="steps_types_description" value="{{typesDescription}}">
     <input type="hidden" id="steps_types" value="{{types}}">
     <input type="hidden" id="steps_values" name="steps" value="{{project.pipeline_steps}}">
     <input type="hidden" id="envs_values" name="envs" value="{{project.pipeline_envs}}">
-    <label for="branch">Branch</label>
+    <label for="branch" class="is-size-5">Branch</label>
     {% if error %}
     <span class="is-danger">{{error}}</span>
     {% endif %}
-    <select id="branch" name="branch">
+    <select id="branch" name="branch" class="select">
         {% for branch in branches %}
         <option value="{{branch.name}}">
             {{branch.name}}
         </option>
         {% endfor %}
     </select>
-    <h4>Steps</h4>
+    <h4 class="is-size-5">Steps
+        <small class="is-size-7"> Steps to be build</small>
+    </h4>
     <div id="steps_container">
 
     </div>
-    <button id="add_step">Add step</button>
 
-    <h4>Env</h4>
+    <button id="add_step" class="button primary  is-small is-primary">+ Add step</button>
+    <hr/>
+
+    <h4 class="is-size-5">Env
+        <small class="is-size-7"> Env variables to be passed to steps</small>
+    </h4>
     <div id="env_container">
 
     </div>
 
-    <button id="add_env">Add Env</button>
+    <button id="add_env" class="button primary  is-small is-primary">+ Add Env</button>
     <hr/>
-    <button id="form_submit" type="submit" class="button primary">Save</button>
+    <button id="form_submit" type="submit" class="button is-primary">Save</button>
 </form>
+<script>
+    const typesDescription = JSON.parse(document.getElementById('steps_types_description').value);
+
+    function createFieldElement(tag, className) {
+        const field = document.createElement('div');
+        field.classList.add('field');
+        let control = document.createElement('p');
+        control.classList.add('control');
+        field.appendChild(control);
+        let element = document.createElement(tag);
+        control.appendChild(element);
+        element.classList.add(tag);
+        if (className) {
+            element.classList.add(className);
+        }
+        return {
+            field: field,
+            element: element
+        }
+    }
+
+    function createFieldBodyElement(isHorizontal) {
+        const fieldBody = document.createElement('div');
+        fieldBody.classList.add('field-body');
+        if (isHorizontal) {
+            fieldBody.classList.add("is-horizontal");
+        }
+        return fieldBody;
+    }
+
+    function getJobDescription(selected) {
+        return typesDescription[selected] || '';
+    }
+    console.log(typesDescription);
+</script>
 <script>
     let actions = JSON.parse(document.getElementById('steps_types').value);
     const STEP_KIND_CLASS = "step-key";
     const STEP_KIND_SUFFIX = "step_value_";
 
     function createPipelineStep(ele /* if already exists  */) {
-        let select = document.createElement('select');
-        select.classList.add(STEP_KIND_CLASS);
-        let text = document.createElement('textarea');
-        let row = document.createElement('div');
+        let row = createFieldBodyElement(true);
+        let selectField = createFieldElement('select', STEP_KIND_CLASS);
+        let select = selectField.element;
+        let textField = createFieldElement('textarea');
+        let text = textField.element;
         let container = document.getElementById('steps_container');
         let selects = container.querySelectorAll('.' + STEP_KIND_CLASS);
         let optionEl;
@@ -71,9 +117,13 @@
         }
         select.setAttribute('data-value-id', id);
         text.setAttribute('id', id);
-        row.appendChild(select);
-        row.appendChild(text);
+        row.appendChild(selectField.field);
+        row.appendChild(textField.field);
         container.appendChild(row);
+        select.addEventListener('change', function (event) {
+            console.log("change");
+            text.placeholder = getJobDescription(event.currentTarget.options[event.currentTarget.selectedIndex].value);
+        })
     }
 
     function getSteps() {
@@ -101,13 +151,15 @@
     const ENV_KEY_CLASS = "env-key";
     const ENV_VALUE_SUFFIX = "env_value_";
 
+
     function createEnvRow(ele /*optional */) {
         let elements = document.querySelectorAll('.' + ENV_KEY_CLASS);
         let container = document.getElementById('env_container');
-        let row = document.createElement('div');
-        let inputName = document.createElement('input');
-        inputName.classList.add(ENV_KEY_CLASS);
-        let inputValue = document.createElement('input');
+        let row = createFieldBodyElement(true);
+        let fieldName = createFieldElement('input', ENV_KEY_CLASS);
+        let fieldValue = createFieldElement('input');
+        let inputName = fieldName.element;
+        let inputValue = fieldValue.element;
         let id;
         if (ele) {
             id = ENV_VALUE_SUFFIX + ele.index;
@@ -118,8 +170,8 @@
         }
         inputName.setAttribute('data-value-id', id);
         inputValue.setAttribute('id', id);
-        row.appendChild(inputName);
-        row.appendChild(inputValue);
+        row.appendChild(fieldName.field)
+        row.appendChild(fieldValue.field)
         container.appendChild(row);
     }
 
