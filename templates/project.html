@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<form action="{{ url_for('projects.run_pipeline', id=project.id) }}" method="post">
+    <h1>{{project.name}} </h1>
+    <button type="submit" class="is-pulled-right">Run</button>
+</form>
+<h3>Pipeline</h3>
+<form action="{{ url_for('projects.pipeline', id=project.id) }}" method="post">
+    <input type="hidden" id="steps_types" value="{{types}}">
+    <input type="hidden" id="steps_values" name="steps" value="{{project.pipeline_steps}}">
+    <input type="hidden" id="envs_values" name="envs" value="{{project.pipeline_envs}}">
+    <label for="branch">Branch</label>
+    {% if error %}
+    <span class="is-danger">{{error}}</span>
+    {% endif %}
+    <select id="branch" name="branch">
+        {% for branch in branches %}
+        <option value="{{branch.name}}">
+            {{branch.name}}
+        </option>
+        {% endfor %}
+    </select>
+    <h4>Steps</h4>
+    <div id="steps_container">
+
+    </div>
+    <button id="add_step">Add step</button>
+
+    <h4>Env</h4>
+    <div id="env_container">
+
+    </div>
+
+    <button id="add_env">Add Env</button>
+    <hr/>
+    <button id="form_submit" type="submit" class="button primary">Save</button>
+</form>
+<script>
+    let actions = JSON.parse(document.getElementById('steps_types').value);
+    const STEP_KIND_CLASS = "step-key";
+    const STEP_KIND_SUFFIX = "step_value_";
+
+    function createPipelineStep(ele /* if already exists  */) {
+        let select = document.createElement('select');
+        select.classList.add(STEP_KIND_CLASS);
+        let text = document.createElement('textarea');
+        let row = document.createElement('div');
+        let container = document.getElementById('steps_container');
+        let selects = container.querySelectorAll('.' + STEP_KIND_CLASS);
+        let optionEl;
+        actions.forEach(e => {
+            optionEl = document.createElement('option');
+            optionEl.setAttribute('value', e);
+            optionEl.innerText = e;
+            if (ele) {
+                if ((ele.type) === e) {
+                    optionEl.setAttribute('selected', 'selected');
+                }
+            }
+            select.appendChild(optionEl);
+        });
+        let id;
+        if (ele) {
+            id = STEP_KIND_SUFFIX + ele.index;
+            text.value = ele.value;
+
+        } else {
+            id = STEP_KIND_SUFFIX + selects.length;
+        }
+        select.setAttribute('data-value-id', id);
+        text.setAttribute('id', id);
+        row.appendChild(select);
+        row.appendChild(text);
+        container.appendChild(row);
+    }
+
+    function getSteps() {
+        let steps = [];
+        let selects = document.querySelectorAll('.' + STEP_KIND_CLASS);
+        selects.forEach((e, index) => {
+            steps.push({
+                index: index,
+                type: e.value,
+                value: document.getElementById(e.dataset.valueId).value
+            });
+
+        });
+        return steps;
+    }
+
+    let button = document.getElementById('add_step');
+    button.addEventListener('click', function (event) {
+        event.preventDefault();
+        createPipelineStep();
+    })
+
+</script>
+<script>
+    const ENV_KEY_CLASS = "env-key";
+    const ENV_VALUE_SUFFIX = "env_value_";
+
+    function createEnvRow(ele /*optional */) {
+        let elements = document.querySelectorAll('.' + ENV_KEY_CLASS);
+        let container = document.getElementById('env_container');
+        let row = document.createElement('div');
+        let inputName = document.createElement('input');
+        inputName.classList.add(ENV_KEY_CLASS);
+        let inputValue = document.createElement('input');
+        let id;
+        if (ele) {
+            id = ENV_VALUE_SUFFIX + ele.index;
+            inputName.value = ele.key;
+            inputValue.value = ele.value;
+        } else {
+            id = ENV_VALUE_SUFFIX + elements.length;
+        }
+        inputName.setAttribute('data-value-id', id);
+        inputValue.setAttribute('id', id);
+        row.appendChild(inputName);
+        row.appendChild(inputValue);
+        container.appendChild(row);
+    }
+
+    function getEnvs() {
+        let envs = [];
+        let inputs = document.querySelectorAll('.' + ENV_KEY_CLASS);
+        inputs.forEach((e, index) => {
+            if (e.value) {
+                envs.push({
+                    index: index,
+                    key: e.value,
+                    value: document.getElementById(e.dataset.valueId).value
+                });
+            }
+
+        });
+        return envs;
+    }
+
+    let buttonEnv = document.getElementById('add_env');
+    buttonEnv.addEventListener('click', function () {
+        event.preventDefault();
+        createEnvRow();
+    })
+
+</script>
+
+<script>
+
+    let stepsInput = document.getElementById('steps_values');
+    let envsInputs = document.getElementById('envs_values');
+    // init steps
+    try {
+        let stepsValue = stepsInput.value;
+        if (stepsValue && stepsValue !== "None") {
+            let steps = JSON.parse(stepsValue);
+            steps.forEach(e => {
+                createPipelineStep(e)
+            })
+        }
+    } catch (e) {
+
+    }
+    try {
+        // init envs
+        let envsValue = envsInputs.value;
+        if (envsValue && envsValue !== "None") {
+            let envs = JSON.parse(envsValue);
+            envs.forEach(e => {
+                createEnvRow(e)
+            })
+        }
+    } catch (e) {
+
+    }
+    // attach submit
+    let buttonSubmit = document.getElementById('form_submit');
+    buttonSubmit.addEventListener('click', function () {
+        envsInputs.value = JSON.stringify(getEnvs());
+        stepsInput.value = JSON.stringify(getSteps());
+    })
+
+</script>
+{% endblock %}

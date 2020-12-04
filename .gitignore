@@ -1,0 +1,6 @@
+db/database.*
+/venv
+/.idea
+/tmp
+__pycache__/
+*.py[cod]

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="column is-4 is-offset-4">
+    {% if error %}
+    <span class="has-text-danger has-text-centered">{{error}}</span>
+    {% endif %}
+    <form method="POST" action="/projects">
+        <div class="field">
+            <div class="control">
+                <input class="input is-large" type="text" name="path_with_namespace" placeholder="project url "
+                       autofocus=""
+                       autocomplete="false">
+            </div>
+        </div>
+        <button class="button is-block is-info is-large is-fullwidth">add new project</button>
+    </form>
+</div>
+
+<h2>Projects</h2>
+{% for e in projects %}
+<div>
+    <a href="/projects/{{e.id}}"> {{ e.name }} </a>
+</div>
+{% endfor %}
+
+{% endblock %}
